@@ -38,6 +38,7 @@ def show_anim_curves(anim_dict, _plt):
     return _plt
 
 
+'''
 def read_openpose_json(smooth=True, *args):
     # openpose output format:
     # [x1,y1,c1,x2,y2,c2,...]
@@ -227,9 +228,10 @@ def read_openpose_json(smooth=True, *args):
         smoothed[frame] = frames_joint_median
 
     return smoothed
+'''
 
 
-def read_openpose_json_mydata(smooth=True, *args):
+def read_openpose_json_mydata(smooth=True, *args, json_file=None):
     # openpose output format:
     # [x1,y1,c1,x2,y2,c2,...]
     # ignore confidence score, take x and y [x1,y1,x2,y2,...]
@@ -239,6 +241,8 @@ def read_openpose_json_mydata(smooth=True, *args):
     json_files = os.listdir(openpose_output_dir)
     # check for other file types
     json_files = sorted([filename for filename in json_files if filename.endswith(".json")])
+    if json_files is not None:
+        json_files = [json_file]
     cache = {}
     smoothed = {}
     ### extract x,y and ignore confidence score
@@ -422,7 +426,7 @@ def read_openpose_json_mydata(smooth=True, *args):
 
 
 def main(_):
-    smoothed = read_openpose_json_mydata()
+    smoothed = read_openpose_json_mydata(json_file=FLAGS.json)
     plt.figure(2)
     smooth_curves_plot = show_anim_curves(smoothed, plt)
     # return
@@ -546,8 +550,12 @@ def main(_):
             enc_in = np.divide((enc_in - mu), stddev)
 
             dp = 1.0
-            dec_out = np.zeros((1, 48))
-            dec_out[0] = [0 for i in range(48)]
+            # dec_out = np.zeros((1, 48))
+            # dec_out[0] = [0 for i in range(48)]
+
+            dec_out = np.zeros((1, 36))
+            dec_out[0] = [0 for i in range(36)]
+
             _, _, poses3d = model.step(sess, enc_in, dec_out, dp, isTraining=False)
             all_poses_3d = []
             enc_in = data_utils.unNormalizeData(enc_in, data_mean_2d, data_std_2d, dim_to_ignore_2d)

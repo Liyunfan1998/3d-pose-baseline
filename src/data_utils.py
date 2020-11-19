@@ -17,8 +17,7 @@ TEST_SUBJECTS = [9, 11]
 H36M_NAMES = [''] * 32
 H36M_NAMES[0] = 'Hip'
 H36M_NAMES[1] = 'RHip'
-H36M_NAMES[2] = 'RKnee'
-H36M_NAMES[3] = 'RFoot'
+# H36M_NAMES[2] = 'RKnee'/
 H36M_NAMES[6] = 'LHip'
 H36M_NAMES[7] = 'LKnee'
 H36M_NAMES[8] = 'LFoot'
@@ -32,6 +31,8 @@ H36M_NAMES[19] = 'LWrist'
 H36M_NAMES[25] = 'RShoulder'
 H36M_NAMES[26] = 'RElbow'
 H36M_NAMES[27] = 'RWrist'
+
+# H36M_NAMES=[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]
 
 # Stacked Hourglass produces 16 joints. These are the names.
 SH_NAMES = [''] * 16
@@ -52,6 +53,9 @@ SH_NAMES[13] = 'LShoulder'
 SH_NAMES[14] = 'LElbow'
 SH_NAMES[15] = 'LWrist'
 
+# SH_NAMES = ['RHip','LHip','Hip','Spine','Thorax','Head','RWrist','RElbow','RShoulder','LShoulder','LElbow','LWrist']
+
+not_use_joints = ['', 'LKnee', 'LFoot', 'RKnee', 'RFoot']
 
 def load_data(bpath, subjects, actions, dim=3):
     """Loads 2d ground truth from disk, and puts it in an easy-to-acess dictionary
@@ -76,11 +80,11 @@ def load_data(bpath, subjects, actions, dim=3):
     for subj in subjects:
         for action in actions:
 
-            print('Reading subject {0}, action {1}'.format(subj, action))
+            # print('Reading subject {0}, action {1}'.format(subj, action))
 
             dpath = os.path.join(bpath, 'S{0}'.format(subj), 'MyPoseFeatures/D{0}_Positions'.format(dim),
                                  '{0}*.cdf'.format(action))
-            print(dpath)
+            # print(dpath)
 
             fnames = glob.glob(dpath)
 
@@ -95,7 +99,7 @@ def load_data(bpath, subjects, actions, dim=3):
                 # This rule makes sure that WalkDog and WalkTogeter are not loaded when
                 # Walking is requested.
                 if seqname.startswith(action):
-                    print(fname)
+                    # print(fname)
                     loaded_seqs = loaded_seqs + 1
 
                     cdf_file = cdflib.CDF(fname)
@@ -133,12 +137,15 @@ def normalization_stats(complete_data, dim, predict_14=False):
 
     # Encodes which 17 (or 14) 2d-3d pairs we are predicting
     dimensions_to_ignore = []
+
     if dim == 2:
-        dimensions_to_use = np.where(np.array([x != '' and x != 'Neck/Nose' for x in H36M_NAMES]))[0]
+        # dimensions_to_use = np.where(np.array([x != '' and x != 'Neck/Nose' for x in H36M_NAMES]))[0]
+        dimensions_to_use = np.where(np.array([x not in not_use_joints  and x != 'Neck/Nose' for x in H36M_NAMES]))[0]
         dimensions_to_use = np.sort(np.hstack((dimensions_to_use * 2, dimensions_to_use * 2 + 1)))
         dimensions_to_ignore = np.delete(np.arange(len(H36M_NAMES) * 2), dimensions_to_use)
     else:  # dim == 3
-        dimensions_to_use = np.where(np.array([x != '' for x in H36M_NAMES]))[0]
+        # dimensions_to_use = np.where(np.array([x != '' for x in H36M_NAMES]))[0]
+        dimensions_to_use = np.where(np.array([x not in not_use_joints for x in H36M_NAMES]))[0]
         dimensions_to_use = np.delete(dimensions_to_use, [0, 7, 9] if predict_14 else 0)
 
         dimensions_to_use = np.sort(np.hstack((dimensions_to_use * 3,

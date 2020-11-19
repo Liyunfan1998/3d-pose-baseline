@@ -56,6 +56,9 @@ tf.app.flags.DEFINE_string("train_dir", "experiments", "Training directory.")
 # openpose
 tf.app.flags.DEFINE_string("pose_estimation_json", "/tmp/",
                            "pose estimation json output directory, openpose or tf-pose-estimation")
+# openpose
+tf.app.flags.DEFINE_string("json", "/tmp/1.json",
+                           "pose estimation json from openpose")
 tf.app.flags.DEFINE_boolean("interpolation", False, "interpolate openpose json")
 tf.app.flags.DEFINE_float("multiplier", 0.1, "interpolation frame range")
 tf.app.flags.DEFINE_boolean("write_gif", False, "write final anim gif")
@@ -158,6 +161,7 @@ def train():
     actions = data_utils.define_actions(FLAGS.action)
 
     number_of_actions = len(actions)
+    '''
     data_dir = '/home/lyunfan/NYU_summer_intern/3d_pose_baseline_pytorch/data/'
     stat_3d = torch.load(os.path.join(data_dir, 'stat_3d.pth.tar'))
     train_set_2d = train_2d = torch.load(os.path.join(data_dir, 'train_2d.pth.tar'))
@@ -170,21 +174,21 @@ def train():
         copy.deepcopy(complete_train), dim=2)
     data_mean_3d, data_std_3d, dim_to_ignore_3d, dim_to_use_3d = stat_3d['mean'], stat_3d['std'], stat_3d['dim_ignore'], \
                                                                  stat_3d['dim_use']
-
+        '''
     # Load camera parameters
     SUBJECT_IDS = [1, 5, 6, 7, 8, 9, 11]
     rcams = cameras.load_cameras(FLAGS.cameras_path, SUBJECT_IDS)
 
     # Load 3d data and load (or create) 2d projections
-    # train_set_3d, test_set_3d, data_mean_3d, data_std_3d, dim_to_ignore_3d, dim_to_use_3d, train_root_positions, test_root_positions = data_utils.read_3d_data(
-    #   actions, FLAGS.data_dir, FLAGS.camera_frame, rcams, FLAGS.predict_14 )
+    train_set_3d, test_set_3d, data_mean_3d, data_std_3d, dim_to_ignore_3d, dim_to_use_3d, train_root_positions, test_root_positions = data_utils.read_3d_data(
+      actions, FLAGS.data_dir, FLAGS.camera_frame, rcams, FLAGS.predict_14 )
 
     # Read stacked hourglass 2D predictions if use_sh, otherwise use groundtruth 2D projections
-    # if FLAGS.use_sh:
-    #     train_set_2d, test_set_2d, data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.read_2d_predictions(
-    #         actions, FLAGS.data_dir)
-    # else:
-    #   train_set_2d, test_set_2d, data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.create_2d_data( actions, FLAGS.data_dir, rcams )
+    if FLAGS.use_sh:
+        train_set_2d, test_set_2d, data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.read_2d_predictions(
+            actions, FLAGS.data_dir)
+    else:
+      train_set_2d, test_set_2d, data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.create_2d_data( actions, FLAGS.data_dir, rcams )
     print("done reading and normalizing data.")
 
     # Avoid using the GPU if requested
@@ -283,7 +287,8 @@ def train():
 
             else:
 
-                n_joints = 17 if not (FLAGS.predict_14) else 14
+                # n_joints = 17 if not (FLAGS.predict_14) else 14
+                n_joints = 13
                 encoder_inputs, decoder_outputs = model.get_all_batches(test_set_2d, test_set_3d, FLAGS.camera_frame,
                                                                         training=False)
 
@@ -368,7 +373,8 @@ def evaluate_batches(sess, model,
       loss
     """
 
-    n_joints = 17 if not (FLAGS.predict_14) else 14
+    # n_joints = 17 if not (FLAGS.predict_14) else 14
+    n_joints = 13
     nbatches = len(encoder_inputs)
 
     # Loop through test examples
@@ -406,8 +412,9 @@ def evaluate_batches(sess, model,
                 _, Z, T, b, c = procrustes.compute_similarity_transform(gt, out, compute_optimal_scale=True)
                 out = (b * out.dot(T)) + c
 
-                poses3d[j, :] = np.reshape(out, [-1, 17 * 3]) if not (FLAGS.predict_14) else np.reshape(out,
-                                                                                                        [-1, 14 * 3])
+                # poses3d[j, :] = np.reshape(out, [-1, 17 * 3]) if not (FLAGS.predict_14) else np.reshape(out,
+                #                                                                                         [-1, 14 * 3])
+                poses3d[j, :] = np.reshape(out, [-1, 13 * 3])
 
         # Compute Euclidean distance error per joint
         sqerr = (poses3d - dec_out) ** 2  # Squared error between prediction and expected output
@@ -437,7 +444,7 @@ def sample():
     """Get samples from a model and visualize them"""
 
     actions = data_utils.define_actions(FLAGS.action)
-    data_dir = '/home/lyunfan/NYU_summer_intern/3d_pose_baseline_pytorch/data/'
+    '''data_dir = '/home/lyunfan/NYU_summer_intern/3d_pose_baseline_pytorch/data/'
     stat_3d = torch.load(os.path.join(data_dir, 'stat_3d.pth.tar'))
     test_set_3d = torch.load(os.path.join(data_dir, 'test_3d.pth.tar'))
     test_set_2d = torch.load(os.path.join(data_dir, 'test_2d.pth.tar'))
@@ -446,20 +453,20 @@ def sample():
     complete_train = np.vstack(test_set_2d.values())
     data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.normalization_stats(complete_train, dim=2)
     data_mean_3d, data_std_3d, dim_to_ignore_3d, dim_to_use_3d = stat_3d['mean'], stat_3d['std'], stat_3d['dim_ignore'], \
-                                                                 stat_3d['dim_use'],
+                                                                 stat_3d['dim_use'],'''
     # Load camera parameters
     SUBJECT_IDS = [1, 5, 6, 7, 8, 9, 11]
     rcams = cameras.load_cameras(FLAGS.cameras_path, SUBJECT_IDS)
 
     # Load 3d data and load (or create) 2d projections
-    # train_set_3d, test_set_3d, data_mean_3d, data_std_3d, dim_to_ignore_3d, dim_to_use_3d, train_root_positions, test_root_positions = data_utils.read_3d_data(
-    #   actions, FLAGS.data_dir, FLAGS.camera_frame, rcams, FLAGS.predict_14 )
+    train_set_3d, test_set_3d, data_mean_3d, data_std_3d, dim_to_ignore_3d, dim_to_use_3d, train_root_positions, test_root_positions = data_utils.read_3d_data(
+      actions, FLAGS.data_dir, FLAGS.camera_frame, rcams, FLAGS.predict_14 )
 
-    # if FLAGS.use_sh:
-    #     train_set_2d, test_set_2d, data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.read_2d_predictions(
-    #         actions, FLAGS.data_dir)
-    # else:
-    #   train_set_2d, test_set_2d, data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.create_2d_data( actions, FLAGS.data_dir, rcams )
+    if FLAGS.use_sh:
+        train_set_2d, test_set_2d, data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.read_2d_predictions(
+            actions, FLAGS.data_dir)
+    else:
+      train_set_2d, test_set_2d, data_mean_2d, data_std_2d, dim_to_ignore_2d, dim_to_use_2d = data_utils.create_2d_data( actions, FLAGS.data_dir, rcams )
     print("done reading and normalizing data.")
 
     device_count = {"GPU": 0} if FLAGS.use_cpu else {"GPU": 1}
@@ -507,7 +514,8 @@ def sample():
             # Convert back to world coordinates
             if FLAGS.camera_frame:
                 N_CAMERAS = 4
-                N_JOINTS_H36M = 32
+                # N_JOINTS_H36M = 32
+                N_JOINTS_H36M = 24
 
                 # Add global position back
                 dec_out = dec_out + np.tile(test_root_positions[key3d], [1, N_JOINTS_H36M])
