@@ -1,6 +1,7 @@
 src/data/
 data/
 experiments/
+output-h36m/
 *~
 *.pyc
 *.h5
