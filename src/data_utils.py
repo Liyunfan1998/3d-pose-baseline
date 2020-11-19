@@ -57,6 +57,7 @@ SH_NAMES[15] = 'LWrist'
 
 not_use_joints = ['', 'LKnee', 'LFoot', 'RKnee', 'RFoot']
 
+
 def load_data(bpath, subjects, actions, dim=3):
     """Loads 2d ground truth from disk, and puts it in an easy-to-acess dictionary
 
@@ -140,7 +141,7 @@ def normalization_stats(complete_data, dim, predict_14=False):
 
     if dim == 2:
         # dimensions_to_use = np.where(np.array([x != '' and x != 'Neck/Nose' for x in H36M_NAMES]))[0]
-        dimensions_to_use = np.where(np.array([x not in not_use_joints  and x != 'Neck/Nose' for x in H36M_NAMES]))[0]
+        dimensions_to_use = np.where(np.array([x not in not_use_joints and x != 'Neck/Nose' for x in H36M_NAMES]))[0]
         dimensions_to_use = np.sort(np.hstack((dimensions_to_use * 2, dimensions_to_use * 2 + 1)))
         dimensions_to_ignore = np.delete(np.arange(len(H36M_NAMES) * 2), dimensions_to_use)
     else:  # dim == 3
@@ -154,6 +155,7 @@ def normalization_stats(complete_data, dim, predict_14=False):
         dimensions_to_ignore = np.delete(np.arange(len(H36M_NAMES) * 3), dimensions_to_use)
 
     return data_mean, data_std, dimensions_to_ignore, dimensions_to_use
+
 
 '''
 def load_stacked_hourglass(data_dir, subjects, actions):
@@ -260,6 +262,7 @@ def read_2d_predictions(actions, data_dir):
 
     return train_set, test_set, data_mean, data_std, dim_to_ignore, dim_to_use
 '''
+
 
 def transform_world_to_camera(poses_set, cams, ncams=4):
     """Project 3d poses from world coordinate to camera coordinate system
@@ -490,3 +493,7 @@ def postprocess_3d(poses_set):
         poses_set[k] = poses
 
     return poses_set, root_positions
+
+
+def read_from_csv(csv_dir):
+    pass
