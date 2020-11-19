@@ -6,7 +6,8 @@ import os
 
 import cdflib
 import numpy as np
-
+import pandas as pd
+import re
 import cameras
 
 # Human3.6m IDs for training and testing
@@ -431,6 +432,48 @@ def create_2d_data(actions, data_dir, rcams):
     return train_set, test_set, data_mean, data_std, dim_to_ignore, dim_to_use
 
 
+def create_openpose_2D_data(actions, data_dir, rcams=None):
+    """Creates 2d poses by directly reading from 2d poses output by openpose
+
+    Args
+      actions: list of strings. Actions to load
+      data_dir: string. Directory where the data can be loaded from
+    Returns
+      train_set: dictionary with projected 2d poses for training
+      test_set: dictionary with projected 2d poses for testing
+      data_mean: vector with the mean of the 2d training data
+      data_std: vector with the standard deviation of the 2d training data
+      dim_to_ignore: list with the dimensions to not predict
+      dim_to_use: list with the dimensions to predict
+    """
+    # Load 2d data
+    train_set, train_frame_seq = read_from_csv(data_dir, TRAIN_SUBJECTS, actions, dim=3)
+    test_set, test_frame_seq = read_from_csv(data_dir, TEST_SUBJECTS, actions, dim=3)
+
+    # Compute normalization statistics.
+    complete_train = copy.deepcopy(np.vstack(list(train_set.values())))
+
+    # TODO
+    data_mean, data_std = np.mean(complete_train, axis=0), np.std(complete_train, axis=0)
+
+    def norm(data):
+        data_out = {}
+        for key in data.keys():
+            mu = data_mean
+            stddev = data_std
+            data_out[key] = np.divide((data[key] - mu), stddev)
+        return data_out
+
+    # need to calc mean, std?
+    train_set = norm(train_set)
+    test_set = norm(test_set)
+    # data_mean, data_std, dim_to_ignore, dim_to_use = normalization_stats(complete_train, dim=2)
+    # # Divide every dimension independently
+    # train_set = normalize_data(train_set, data_mean, data_std, dim_to_use)
+    # test_set = normalize_data(test_set, data_mean, data_std, dim_to_use)
+    return train_set, test_set, train_frame_seq, test_frame_seq  # , data_mean, data_std, dim_to_ignore, dim_to_use
+
+
 def read_3d_data(actions, data_dir, camera_frame, rcams, predict_14=False):
     """Loads 3d poses, zero-centres and normalizes them
 
@@ -495,5 +538,42 @@ def postprocess_3d(poses_set):
     return poses_set, root_positions
 
 
-def read_from_csv(csv_dir):
-    pass
+def read_from_csv(csv_dir, subjects, actions, dim=3):
+    data = {}
+    frame_seq = {}
+    for subj in subjects:
+        for action in actions:
+            # print('Reading subject {0}, action {1}'.format(subj, action))
+
+            dpath = os.path.join(csv_dir, 'S{0}_*.csv'.format(subj))
+            # print(dpath)
+
+            fnames = glob.glob(dpath)
+
+            loaded_seqs = 0
+            for fname in fnames:
+                tmp = os.path.basename(fname).split('_')
+                seqname = tmp[1] + '.' + tmp[2][:-4] + '.h5'
+
+                # This rule makes sure SittingDown is not loaded when Sitting is requested
+                if action == "Sitting" and seqname.startswith("SittingDown"):
+                    continue
+
+                # This rule makes sure that WalkDog and WalkTogeter are not loaded when
+                # Walking is requested.
+                if seqname.startswith(action):
+                    # print(fname)
+                    loaded_seqs = loaded_seqs + 1
+                    try:
+                        dump = pd.read_csv(fname, usecols=[1]).to_numpy()
+                        data[(subj, action, seqname)] = np.asarray(
+                            [np.array(line[0].strip('[]\n').split(',')).astype(np.float)[:54] for line
+                             in dump])
+
+                        dump = pd.read_csv(fname, usecols=[0]).to_numpy()
+                        frame_seq[(subj, action, seqname)] = [int(line[0][4:]) for line in dump]
+                    except:
+                        pass
+                    #     data[(subj, action, seqname)] = None
+                    #     frame_seq[(subj, action, seqname)] = None
+    return data, frame_seq
