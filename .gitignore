@@ -7,6 +7,7 @@ output-h36m/
 src/.ipynb_checkpoints/
 src/__pycache__
 oph36m/
+maya/*.json
 *~
 *.pyc
 *.h5
@@ -14,4 +15,5 @@ oph36m/
 *.mpeg
 *.swp
 *.png
+*.gif
 *.tar.gz
