@@ -23,7 +23,7 @@ import procrustes
 import viz
 import cameras
 import data_utils
-import linear_model
+import linear_model_openpose as linear_model
 
 tf.app.flags.DEFINE_float("learning_rate", 1e-3, "Learning rate")
 tf.app.flags.DEFINE_float("dropout", 1, "Dropout keep probability. 1 means no dropout")
@@ -50,7 +50,7 @@ tf.app.flags.DEFINE_boolean("evaluateActionWise", False, "The dataset to use eit
 # Directories
 # tf.app.flags.DEFINE_string("cameras_path","data/h36m/cameras.h5","Directory to load camera parameters")
 tf.app.flags.DEFINE_string("cameras_path", "data/Release-v1.2/metadata.xml", "Directory to load camera parameters")
-tf.app.flags.DEFINE_string("csv_dir", "../output-h36m/", "Openpose data directory")
+tf.app.flags.DEFINE_string("csv_dir", "../oph36m/", "Openpose data directory")
 tf.app.flags.DEFINE_string("data_dir", "data/h36m/", "Data directory")
 
 tf.app.flags.DEFINE_string("train_dir", "experiments", "Training directory.")
@@ -176,6 +176,27 @@ def train():
     # Load 3d data and load (or create) 2d projections
     train_set_3d, test_set_3d, data_mean_3d, data_std_3d, dim_to_ignore_3d, dim_to_use_3d, train_root_positions, test_root_positions = data_utils.read_3d_data(
         actions, FLAGS.data_dir, FLAGS.camera_frame, rcams, FLAGS.predict_14)
+
+    def set_3D_used_seq(train_set_3d, test_set_3d, train_frame_seq, test_frame_seq):
+        train_set_3d_new, test_set_3d_new = {}, {}
+        for key in set(train_frame_seq.keys()) & set(train_set_3d.keys()):
+            use = np.array(train_frame_seq[key]) - 1
+            train_set_3d_new[key] = train_set_3d[key][use]
+        for key in set(test_frame_seq.keys()) & set(test_set_3d.keys()):
+            use = np.array(test_frame_seq[key]) - 1
+            test_set_3d_new[key] = test_set_3d[key][use]
+        return train_set_3d_new, test_set_3d_new
+
+    def set_2D_used_seq(train_set_3d, test_set_3d, train_set_2d, test_set_2d):
+        train_set_2d_new, test_set_2d_new = {}, {}
+        for key in set(train_set_2d.keys()) & set(train_set_3d.keys()):
+            train_set_2d_new[key] = train_set_2d[key]
+        for key in set(test_set_2d.keys()) & set(test_set_3d.keys()):
+            test_set_2d_new[key] = test_set_2d[key]
+        return train_set_2d_new, test_set_2d_new
+
+    train_set_3d, test_set_3d = set_3D_used_seq(train_set_3d, test_set_3d, train_frame_seq, test_frame_seq)
+    train_set_2d, test_set_2d = set_2D_used_seq(train_set_3d, test_set_3d, train_set_2d, test_set_2d)
 
     # Avoid using the GPU if requested
     device_count = {"GPU": 0} if FLAGS.use_cpu else {"GPU": 1}

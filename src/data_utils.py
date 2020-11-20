@@ -545,8 +545,7 @@ def read_from_csv(csv_dir, subjects, actions, dim=3):
         for action in actions:
             # print('Reading subject {0}, action {1}'.format(subj, action))
 
-            dpath = os.path.join(csv_dir, 'S{0}_*.csv'.format(subj))
-            # print(dpath)
+            dpath = os.path.join(csv_dir, 'S{0}_'.format(subj) + '{0}*.csv'.format(action))
 
             fnames = glob.glob(dpath)
 

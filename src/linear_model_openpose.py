@@ -60,13 +60,7 @@ class LinearModel(object):
           dtype: the data type to use to store internal variables
         """
 
-        # There are in total 17 joints in H3.6M and 16 in MPII (and therefore in stacked
-        # hourglass detections). We settled with 16 joints in 2d just to make models
-        # compatible (e.g. you can train on ground truth 2d and test on SH detections).
-        # This does not seem to have an effect on prediction performance.
-
-        # self.HUMAN_2D_SIZE = 16 * 2
-        self.HUMAN_2D_SIZE = 12 * 2
+        self.HUMAN_2D_SIZE = 54
 
         # In 3d all the predictions are zero-centered around the root (hip) joint, so
         # we actually predict only 16 joints. The error is still computed over 17 joints,
@@ -75,7 +69,6 @@ class LinearModel(object):
         # There is also an option to predict only 14 joints, which makes our results
         # directly comparable to those in https://arxiv.org/pdf/1611.09010.pdf
 
-        # self.HUMAN_3D_SIZE = 14 * 3 if predict_14 else 16 * 3
         self.HUMAN_3D_SIZE = 12 * 3
 
         self.input_size = self.HUMAN_2D_SIZE
@@ -302,7 +295,8 @@ class LinearModel(object):
             decoder_outputs = decoder_outputs[:-n_extra, :]
 
         n_batches = n // self.batch_size
-        encoder_inputs = np.split(encoder_inputs, n_batches)
-        decoder_outputs = np.split(decoder_outputs, n_batches)
+        if n_batches != 0:
+            encoder_inputs = np.split(encoder_inputs, n_batches)
+            decoder_outputs = np.split(decoder_outputs, n_batches)
 
         return encoder_inputs, decoder_outputs
