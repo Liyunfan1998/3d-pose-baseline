@@ -4,6 +4,7 @@ experiments/
 output-h36m/
 src/.ipynb_checkpoints/
 src/__pycache__
+op36m/
 *~
 *.pyc
 *.h5
